@@ -1,0 +1,15 @@
+default:
+  prepare:
+    exec:
+      - 'ls ~/nvm || git clone http://gitlab.alibaba-inc.com/node/nvm.git ~/nvm'
+      - echo source ~/nvm/nvm.sh >> ~/.bashrc
+      - nvm install 4.4.2
+      - nvm alias default 4.4.2
+      - 'npm i tnpm@4 -g --registry=http://registry.npm.alibaba-inc.com'
+      - tnpm install
+  run_it:
+    exec:
+      - echo "eslint 语法规范检测"
+      - tnpm ii eslint @ali/fie-plugin-eslint
+      - './node_modules/.bin/eslint -o eslint.json -f json ./ --ext .js,.jsx'
+      - ./node_modules/.bin/fie-eslint report

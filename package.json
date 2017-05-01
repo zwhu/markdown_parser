@@ -1,0 +1,25 @@
+{
+  "name": "markdown_parser",
+  "version": "1.0.0",
+  "description": "markdown parser",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "./node_modules/eslint/bin/eslint.js --fix ./ --ext .jsx --ext .js"
+  },
+  "keywords": [
+    "markdown",
+    "parser"
+  ],
+  "author": "zwhu",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint-config-ali": "*",
+    "eslint": "*",
+    "eslint-plugin-import": "*",
+    "eslint-plugin-jsx-a11y": "*",
+    "eslint-plugin-react": "*",
+    "@ali/ci-log": "*",
+    "babel-eslint": "*"
+  }
+}
