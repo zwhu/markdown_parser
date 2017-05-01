@@ -118,12 +118,8 @@ class Parser {
 
 
   loopToOneLineEnd() {
-    while (1) {
+    while (this.c !== '\n') {
       this.consume();
-
-      if (this.c === '\n') {
-        break;
-      }
     }
   }
 
