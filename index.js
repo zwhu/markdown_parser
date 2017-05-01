@@ -62,11 +62,33 @@ class Parser {
   }
 
   block() {
-
+    this.loopToOneLineEnd();
+    this.asts.push({
+      type: 'block',
+      text: this.content
+    });
   }
 
   headers() {
+        // headers
+    let i = 0;
+    do {
+      i += 1;
+      this.consume();
+    } while (this.c === '#' && i < 7);
 
+    this.loopToOneLineEnd();
+    this.asts.push({
+      type: `h${i}`,
+      text: this.content
+    });
+  }
+
+  blankline() {
+    this.asts.push({
+      type: 'blankline',
+      text: this.content
+    });
   }
 
   blockquotes() {
@@ -78,7 +100,11 @@ class Parser {
   }
 
   codeblocks() {
-
+    this.loopToOneLineEnd();
+    this.asts.push({
+      type: 'codeblocks',
+      text: this.content
+    });
   }
 
   horizontal() {
@@ -91,76 +117,18 @@ class Parser {
   }
 
 
-  parse() {
-    while (this.c !== EOF) {
-      this.ws();
+  loopToOneLineEnd() {
+    while (1) {
+      this.consume();
 
-      if (this.c === EOF) {
-        this.asts.push({
-          type: 'blankline',
-          text: this.content,
-          position: {
-            x: 0,
-            y: this.position.y
-          }
-        });
-        return;
-      } else if (this.c === '\n') {
-        this.asts.push({
-          type: 'blankline',
-          text: this.content,
-          position: {
-            x: 0,
-            y: this.position.y
-          }
-        });
-        this.resetLine();
-      } else if (this.position.x > 3) {
-        while (1) {
-          if (this.c === '\n') {
-            break;
-          }
-          this.consume();
-        }
-        this.asts.push({
-          type: 'codeblocks',
-          text: this.content,
-          position: {
-            x: 0,
-            y: this.position.y
-          }
-        });
-        this.resetLine();
-      } else if (this.c === '#') {
-        // headers
-        let i = 0;
-        do {
-          i += 1;
-          this.consume();
-        } while (this.c === '#' && i < 7);
-
-        while (1) {
-          if (this.c === '\n') {
-            break;
-          }
-          this.consume();
-        }
-        this.asts.push({
-          type: `h${i}`,
-          text: this.content,
-          position: {
-            x: 0,
-            y: this.position.y
-          }
-        });
-        this.resetLine();
+      if (this.c === '\n') {
+        break;
       }
     }
   }
 
-  resetLine() {
+  nextLine() {
     this.position = { x: 0, y: this.position.y += 1 };
-
     this.content = '';
     this.consume();
   }
@@ -169,10 +137,28 @@ class Parser {
     // const whiteSpace = /\x20|\x09|\x0D|\x0A/;
     const whiteSpace = / /;
     while (whiteSpace.test(this.c)) {
-      console.log(2222);
       this.consume();
     }
   }
+
+  parse() {
+    while (this.c !== EOF) {
+      this.ws();
+
+      if (this.c === '\n') {
+        this.blankline();
+      } else if (this.position.x > 3) {
+        this.codeblocks();
+      } else if (this.position.x <= 3) {
+        this.block();
+      } else if (this.c === '#') {
+        this.headers();
+      }
+
+      this.nextLine();
+    }
+  }
+
 }
 
 module.exports = Parser;
