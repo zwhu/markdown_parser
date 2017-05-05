@@ -62,25 +62,29 @@ class Parser {
   }
 
   block() {
+    this.content = this.content.slice(-1);
     this.loopToOneLineEnd();
     this.asts.push({
       type: 'block',
-      text: this.content
+      text: this.content.slice(0, -1)
     });
   }
 
   headers() {
-        // headers
     let i = 0;
     do {
       i += 1;
       this.consume();
     } while (this.c === '#' && i < 7);
 
+    this.content = this.content.slice(-1);
+    this.ws();
+    this.content = this.content.slice(-1);
     this.loopToOneLineEnd();
+
     this.asts.push({
       type: `h${i}`,
-      text: this.content
+      text: this.content.slice(0, -1)
     });
   }
 
@@ -92,7 +96,11 @@ class Parser {
   }
 
   blockquotes() {
-
+    this.loopToOneLineEnd();
+    this.asts.push({
+      type: 'blockquotes',
+      text: this.content.slice(1, -1)
+    });
   }
 
   lists() {
@@ -113,7 +121,67 @@ class Parser {
 
   toHtml() {
     this.parse();
-    return this.asts;
+    return this.genHtml();
+  }
+
+  genHtml() {
+    let i = 0;
+    let html = '';
+    while (i < this.asts.length) {
+      let statement = this.asts[i];
+      i += 1;
+      if (/h[1-6]/.test(statement.type)) {
+        html += `<${statement.type}>${statement.text}</${statement.type}>\n`;
+      } else if (statement.type === 'block') {
+        html += `<p>${statement.text}`;
+        while (i < this.asts.length) {
+          statement = this.asts[i];
+          i += 1;
+          if (statement.type === 'block') {
+            html += `<br/>${statement.text}`;
+          } else {
+            i -= 1;
+            break;
+          }
+        }
+        html += '</p>\n';
+      } else if (statement.type === 'codeblocks') {
+        html += `<pre>\n${statement.text}`;
+        while (i < this.asts.length) {
+          statement = this.asts[i];
+          i += 1;
+          if (statement.type === 'codeblocks') {
+            html += statement.text;
+          } else {
+            i -= 1;
+            break;
+          }
+        }
+        html += '</pre>\n';
+      } else if (statement.type === 'blankline') {
+        html += '';
+      } else if (statement.type === 'blockquotes') {
+        let text = statement.text;
+        let child = new Parser(text);
+        text = child.toHtml();
+        html += `<blockquote>${text}`;
+        while (i < this.asts.length) {
+          statement = this.asts[i];
+          text = statement.text;
+          child = new Parser(text);
+          text = child.toHtml();
+          i += 1;
+          if (statement.type === 'blockquotes') {
+            html += text;
+          } else {
+            i -= 1;
+            break;
+          }
+        }
+        html += '</blockquote>\n';
+      }
+    }
+    return html;
   }
 
 
@@ -143,12 +211,14 @@ class Parser {
 
       if (this.c === '\n') {
         this.blankline();
-      } else if (this.position.x > 3) {
+      } else if (this.position.x > 4) {
         this.codeblocks();
-      } else if (this.position.x <= 3) {
-        this.block();
       } else if (this.c === '#') {
         this.headers();
+      } else if (this.c === '>') {
+        this.blockquotes();
+      } else {
+        this.block();
       }
 
       this.nextLine();
